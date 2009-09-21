@@ -125,7 +125,7 @@ module ThinkingSphinx
     end
     
     def include_as_association?
-      ! (type == :multi && (query_source == :query || query_source == :ranged_query))
+      ! (type == :multi && (query_source == :query || query_source == :ranged_query || query_source == :delta_enabled_query))
     end
     
     # Returns the configuration value that should be used for
@@ -197,6 +197,16 @@ module ThinkingSphinx
     private
     
     def source_value(offset, delta)
+      if query_source == :delta_enabled_query
+        query_string = "query; #{columns.first.__name}"
+        if delta == false
+          query_string << " WHERE #{model.quoted_table_name}.`delta` = 0 GROUP BY #{model.quoted_table_name}.id  ORDER BY NULL" 
+        else
+          query_string << " WHERE #{model.quoted_table_name}.`delta` = 1 GROUP BY #{model.quoted_table_name}.id  ORDER BY NULL" 
+        end
+        return query_string
+      end
+      
       if is_string?
         return "#{query_source.to_s.dasherize}; #{columns.first.__name}"
       end
